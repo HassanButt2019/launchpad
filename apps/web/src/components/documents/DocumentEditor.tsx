@@ -190,9 +190,9 @@ export function DocumentEditor({ document, ideaId, docType, onClose }: Props) {
                       ol: ({ children }) => (
                         <ol className="mb-5 space-y-2 list-none counter-reset-item">{children}</ol>
                       ),
-                      li: ({ children, ordered }: { children: React.ReactNode; ordered?: boolean }) => (
+                      li: ({ children }) => (
                         <li className="text-stone-400 text-sm flex gap-3 leading-6">
-                          <span className="text-orange-500/70 shrink-0 mt-0.5 font-bold text-xs">{ordered ? '→' : '•'}</span>
+                          <span className="text-orange-500/70 shrink-0 mt-0.5 font-bold text-xs">•</span>
                           <span className="flex-1">{children}</span>
                         </li>
                       ),

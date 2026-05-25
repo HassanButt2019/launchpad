@@ -40,7 +40,7 @@ export function useStreamChat(ideaId: string) {
 
   const send = useCallback(
     async (content: string) => {
-      setState({ streaming: true, error: null })
+      setState({ streaming: true, error: null, limitReached: false })
 
       // Optimistically append user message
       const optimisticUser: ChatMessage = {
@@ -70,7 +70,7 @@ export function useStreamChat(ideaId: string) {
       ])
 
       const token = useAuthStore.getState().accessToken
-      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://launchpad-g3re.onrender.com'
 
       abortRef.current = new AbortController()
 
@@ -145,14 +145,14 @@ export function useStreamChat(ideaId: string) {
           }
         }
 
-        setState({ streaming: false, error: null })
+        setState({ streaming: false, error: null, limitReached: false })
       } catch (err: unknown) {
         if ((err as Error).name === 'AbortError') {
-          setState({ streaming: false, error: null })
+          setState({ streaming: false, error: null, limitReached: false })
           return
         }
         const msg = err instanceof Error ? err.message : 'Something went wrong'
-        setState({ streaming: false, error: msg })
+        setState({ streaming: false, error: msg, limitReached: false })
         // Remove the failed placeholder
         qc.setQueryData<ChatMessage[]>(chatKeys.messages(ideaId), (prev) =>
           (prev ?? []).filter(

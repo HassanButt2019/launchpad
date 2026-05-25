@@ -11,7 +11,7 @@ export function ApiHealthIndicator() {
     const check = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/health`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'https://launchpad-g3re.onrender.com'}/health`,
           { cache: 'no-store' }
         )
         const data = await res.json()

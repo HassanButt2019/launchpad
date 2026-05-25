@@ -31,6 +31,14 @@ const STAGE_FILTERS: { label: string; value: IdeaStage | 'ALL' }[] = [
   { label: 'Incorporated', value: IdeaStage.INCORPORATED },
 ]
 
+const boldStages = new Set<IdeaStage | 'ALL'>([
+  IdeaStage.DRAFT,
+  IdeaStage.VALIDATING,
+  IdeaStage.VALIDATED,
+  IdeaStage.BUILDING,
+  IdeaStage.INCORPORATED,
+])
+
 const stageMeta: Record<IdeaStage, { label: string; dotColor: string; badgeClass: string }> = {
   DRAFT:        { label: 'Draft',        dotColor: 'bg-stone-500',   badgeClass: 'bg-stone-500/15 text-stone-400 border-stone-500/20' },
   VALIDATING:   { label: 'Validating',   dotColor: 'bg-amber-400',   badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
@@ -95,7 +103,8 @@ export default function IdeasPage() {
               key={value}
               onClick={() => setFilter(value)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                'px-3 py-1.5 rounded-lg text-xs transition-all',
+                boldStages.has(value) ? 'font-bold' : 'font-medium',
                 filter === value
                   ? 'bg-orange-500/15 text-orange-400 border border-orange-500/25'
                   : 'text-[var(--text-muted)] hover:text-stone-300'
@@ -169,7 +178,7 @@ export default function IdeasPage() {
                       </div>
                     </div>
                     <div>
-                      <span className={cn('text-[11px] font-semibold px-2.5 py-1 rounded-full border', badgeClass)}>
+                      <span className={cn('text-[11px] font-bold px-2.5 py-1 rounded-full border', badgeClass)}>
                         {label}
                       </span>
                     </div>

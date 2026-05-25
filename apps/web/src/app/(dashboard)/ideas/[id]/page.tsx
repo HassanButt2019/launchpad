@@ -118,7 +118,7 @@ export default function IdeaPage() {
               <div className="flex items-center gap-2.5 mb-3">
                 <span
                   className={cn(
-                    'text-xs font-semibold px-2.5 py-1 rounded-full border',
+                    'text-xs font-bold px-2.5 py-1 rounded-full border',
                     stageColors[stage]
                   )}
                 >
@@ -249,7 +249,7 @@ export default function IdeaPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Stage</span>
-                <span className={cn('text-[11px] font-semibold px-2.5 py-1 rounded-full border', stageColors[stage])}>
+                <span className={cn('text-[11px] font-bold px-2.5 py-1 rounded-full border', stageColors[stage])}>
                   {stage}
                 </span>
               </div>

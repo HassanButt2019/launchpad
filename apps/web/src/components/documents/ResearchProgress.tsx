@@ -132,7 +132,7 @@ export function ResearchProgress({ ideaId, onClose }: Props) {
     setCurrentStep('planning')
 
     const token = useAuthStore.getState().accessToken
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://launchpad-g3re.onrender.com'
     abortRef.current = new AbortController()
 
     try {

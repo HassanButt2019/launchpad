@@ -32,6 +32,14 @@ const stageDot: Record<IdeaStage, string> = {
   INCORPORATED: 'bg-blue-400',
 }
 
+const boldStages = new Set<IdeaStage>([
+  IdeaStage.DRAFT,
+  IdeaStage.VALIDATING,
+  IdeaStage.VALIDATED,
+  IdeaStage.BUILDING,
+  IdeaStage.INCORPORATED,
+])
+
 function greeting(): string {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
@@ -59,7 +67,7 @@ export default function DashboardPage() {
     .slice(0, 6)
 
   const stats = [
-    { label: 'Total Ideas', value: totalIdeas, icon: Lightbulb, color: 'text-stone-300', bg: 'bg-stone-500/10 border-stone-500/15' },
+    { label: 'Total Ideas', value: totalIdeas, icon: Lightbulb, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
     { label: 'Validated', value: validatedCount, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/15' },
     { label: 'Building', value: buildingCount, icon: Zap, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/15' },
     { label: 'Incorporated', value: incorporatedCount, icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/15' },
@@ -133,7 +141,7 @@ export default function DashboardPage() {
               return (
                 <div key={stage} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className={cn('text-xs font-medium', textColor)}>{label}</span>
+                    <span className={cn('text-xs', boldStages.has(stage) ? 'font-bold' : 'font-medium', textColor)}>{label}</span>
                     <span className="text-[var(--text-secondary)] text-xs">{count} idea{count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[var(--bg-surface-hover)] overflow-hidden">
@@ -245,7 +253,7 @@ export default function DashboardPage() {
                       <p className="text-[var(--text-secondary)] text-xs truncate mt-0.5">{idea.description}</p>
                     </div>
                     <div>
-                      <span className={cn('text-[11px] font-semibold px-2.5 py-1 rounded-full', color, textColor)}>
+                      <span className={cn('text-[11px] font-bold px-2.5 py-1 rounded-full', color, textColor)}>
                         {label}
                       </span>
                     </div>

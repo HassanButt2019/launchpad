@@ -46,7 +46,7 @@ export function IdeaCard({ idea }: Props) {
         </div>
       </div>
       <div>
-        <span className={cn('text-[11px] font-semibold px-2.5 py-1 rounded-full', stageBadge[stage] ?? stageBadge.DRAFT)}>
+        <span className={cn('text-[11px] font-bold px-2.5 py-1 rounded-full', stageBadge[stage] ?? stageBadge.DRAFT)}>
           {stageLabel[stage] ?? stage}
         </span>
       </div>

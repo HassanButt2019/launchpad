@@ -61,7 +61,7 @@ export function StageTracker({ stage }: Props) {
                 <div className="text-center px-1">
                   <p
                     className={cn(
-                      'text-xs font-semibold leading-tight',
+                      'text-xs font-bold leading-tight',
                       isCompleted ? 'text-emerald-400' : isActive ? 'text-orange-400' : 'text-[var(--text-muted)]'
                     )}
                   >

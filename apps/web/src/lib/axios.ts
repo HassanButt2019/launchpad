@@ -9,7 +9,7 @@ const getAuthStore = () => {
 }
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://launchpad-g3re.onrender.com',
 })
 
 api.interceptors.request.use((config) => {
@@ -56,7 +56,7 @@ api.interceptors.response.use(
       }
       try {
         const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'https://launchpad-g3re.onrender.com'}/api/v1/auth/refresh`,
           { refresh_token: refreshToken }
         )
         store.getState().setAccessToken(data.access_token)

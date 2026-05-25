@@ -205,11 +205,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             <Image
+              src="/brand/tritechx-logo-light.png"
+              alt="TritechX logo"
+              width={72}
+              height={22}
+              className="h-auto w-[72px] shrink-0 dark:hidden"
+            />
+            <Image
               src="/brand/tritechx-logo.png"
               alt="TritechX logo"
               width={72}
               height={22}
-              className="h-auto w-[72px] shrink-0"
+              className="hidden h-auto w-[72px] shrink-0 dark:block"
             />
             <span
               className="text-[10px] leading-tight"
