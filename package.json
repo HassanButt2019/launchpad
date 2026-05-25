@@ -1,0 +1,15 @@
+{
+  "name": "launchpad",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:api": "bash scripts/dev_api.sh",
+    "dev:web": "npm run dev --workspace=apps/web --",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:web": "npm run build:shared && npm run build --workspace=apps/web"
+  }
+}

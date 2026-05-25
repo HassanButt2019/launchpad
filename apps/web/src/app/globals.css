@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme tokens ── */
+@layer base {
+  :root {
+    /* Light theme */
+    --bg-base:          #fafaf9;
+    --bg-sidebar:       #f3f1ef;
+    --bg-surface:       rgba(0, 0, 0, 0.03);
+    --bg-surface-hover: rgba(0, 0, 0, 0.05);
+    --bg-input:         rgba(0, 0, 0, 0.04);
+    --bg-modal:         #ffffff;
+    --border-ui:        rgba(0, 0, 0, 0.08);
+    --border-subtle:    rgba(0, 0, 0, 0.05);
+    --border-strong:    rgba(0, 0, 0, 0.12);
+    --text-primary:     #1c1917;
+    --text-secondary:   #78716c;
+    --text-muted:       #a8a29e;
+    --header-bg:        rgba(250, 250, 249, 0.85);
+    --ring-offset:      #fafaf9;
+    --ambient-gradient: rgba(249, 115, 22, 0.04);
+  }
+
+  .dark {
+    --bg-base:          #111110;
+    --bg-sidebar:       #0d0d0c;
+    --bg-surface:       rgba(255, 255, 255, 0.02);
+    --bg-surface-hover: rgba(255, 255, 255, 0.025);
+    --bg-input:         rgba(255, 255, 255, 0.03);
+    --bg-modal:         #111110;
+    --border-ui:        rgba(255, 255, 255, 0.07);
+    --border-subtle:    rgba(255, 255, 255, 0.04);
+    --border-strong:    rgba(255, 255, 255, 0.10);
+    --text-primary:     #ffffff;
+    --text-secondary:   #78716c;
+    --text-muted:       #57534e;
+    --header-bg:        rgba(17, 17, 16, 0.85);
+    --ring-offset:      #111110;
+    --ambient-gradient: rgba(249, 115, 22, 0.06);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-syne);
+  }
+}
+
+@layer utilities {
+  /* Semantic surface utilities */
+  .bg-surface   { background-color: var(--bg-surface); }
+  .bg-input     { background-color: var(--bg-input); }
+  .bg-modal     { background-color: var(--bg-modal); }
+  .border-ui    { border-color: var(--border-ui); }
+  .border-subtle { border-color: var(--border-subtle); }
+  .text-primary  { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted-ui  { color: var(--text-muted); }
+
+  /* Glass card */
+  .glass {
+    background: var(--bg-surface);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-ui);
+  }
+  .glass-hover {
+    transition: all 0.2s;
+  }
+  .glass-hover:hover {
+    background: var(--bg-surface-hover);
+    border-color: rgba(249, 115, 22, 0.3);
+  }
+}
