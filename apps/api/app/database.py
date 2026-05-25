@@ -4,7 +4,7 @@ from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
-
+#
 engine_kwargs = {
     "echo": settings.ENVIRONMENT == "development",
     "pool_pre_ping": True,
