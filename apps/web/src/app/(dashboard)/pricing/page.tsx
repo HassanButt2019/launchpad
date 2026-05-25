@@ -1,45 +1,39 @@
 'use client'
 import { motion } from 'framer-motion'
-import { Check, X, Zap, Rocket, Lightbulb } from 'lucide-react'
+import { Check, X, Zap, Lightbulb, Mail } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { cn } from '@/lib/utils'
 
 interface Feature {
   label: string
-  validate: string | boolean
-  build: string | boolean
-  launch: string | boolean
+  free: string | boolean
+  paid: string | boolean
 }
 
 const FEATURES: Feature[] = [
-  { label: 'Ideas',                     validate: '1',          build: '10',        launch: 'Unlimited' },
-  { label: 'AI Validations',            validate: '1 / idea',   build: 'Unlimited', launch: 'Unlimited' },
-  { label: 'AI Chat messages',          validate: '5 / idea',   build: 'Unlimited', launch: 'Unlimited' },
-  { label: 'Pitch Deck',                validate: true,         build: true,        launch: true },
-  { label: 'MVP Spec',                  validate: false,        build: true,        launch: true },
-  { label: 'Business Plan',             validate: false,        build: true,        launch: true },
-  { label: 'Financial Model',           validate: false,        build: true,        launch: true },
-  { label: 'Legal Checklist',           validate: false,        build: true,        launch: true },
-  { label: 'Agentic Market Research',   validate: false,        build: '2 / idea',  launch: 'Unlimited' },
-  { label: 'Formation Navigator',       validate: false,        build: true,        launch: true },
-  { label: 'Formation Documents',       validate: false,        build: '3 / plan',  launch: 'Unlimited' },
-  { label: 'Compliance Calendar',       validate: false,        build: true,        launch: true },
-  { label: 'Conversation history',      validate: false,        build: true,        launch: true },
-  { label: 'GTM Strategy Generator',    validate: false,        build: false,       launch: true },
-  { label: 'Investor Matching',         validate: false,        build: false,       launch: true },
-  { label: 'Legal Risk Scanner',        validate: false,        build: false,       launch: true },
-  { label: 'Term Sheet Analyzer',       validate: false,        build: false,       launch: true },
-  { label: 'Investor CRM',             validate: false,        build: false,       launch: true },
-  { label: 'Multi-Agent Validation',    validate: false,        build: false,       launch: true },
-  { label: 'Support',                   validate: 'Community',  build: 'Email',     launch: 'Priority' },
+  { label: 'Ideas',                   free: 'Unlimited',  paid: 'Unlimited' },
+  { label: 'AI validations',          free: '1 total',    paid: 'Unlimited' },
+  { label: 'AI chat messages',        free: '5 total',    paid: 'Unlimited' },
+  { label: 'Startup checklist',       free: true,         paid: true },
+  { label: 'Journey overview',        free: true,         paid: true },
+  { label: 'Pitch deck generation',   free: true,         paid: true },
+  { label: 'Business plan',           free: false,        paid: true },
+  { label: 'MVP spec',                free: false,        paid: true },
+  { label: 'Financial model',         free: false,        paid: true },
+  { label: 'Legal checklist',         free: false,        paid: true },
+  { label: 'Market research report',  free: false,        paid: true },
+  { label: 'Agentic market research', free: false,        paid: true },
+  { label: 'Formation navigator',     free: false,        paid: true },
+  { label: 'Formation documents',     free: false,        paid: true },
+  { label: 'Compliance calendar',     free: false,        paid: true },
 ]
 
 const TIERS = [
   {
     key: 'validate',
-    name: 'Validate',
+    name: 'Free',
     price: 'Free',
-    sub: 'No credit card required',
+    sub: 'Explore unlimited startup ideas',
     icon: Lightbulb,
     accent: 'stone',
     cta: 'Current plan',
@@ -48,8 +42,8 @@ const TIERS = [
   },
   {
     key: 'build',
-    name: 'Build',
-    price: '$19',
+    name: 'Paid',
+    price: '$25',
     sub: 'per month',
     icon: Zap,
     accent: 'orange',
@@ -57,17 +51,13 @@ const TIERS = [
     ctaDisabled: false,
     highlight: true,
   },
-  {
-    key: 'launch',
-    name: 'Launch',
-    price: '$49',
-    sub: 'per month',
-    icon: Rocket,
-    accent: 'blue',
-    cta: 'Upgrade to Launch',
-    ctaDisabled: false,
-    highlight: false,
-  },
+]
+
+const CONTACT_EMAILS = [
+  'usamamuhammad833@gmail.com',
+  'hassantest318@gmail.com',
+  'usama@sourcecanada.ca',
+  'muhammad.usama@tritechx.com',
 ]
 
 function Cell({ value }: { value: string | boolean }) {
@@ -79,6 +69,7 @@ function Cell({ value }: { value: string | boolean }) {
 export default function PricingPage() {
   const user = useAuthStore((s) => s.user)
   const currentTier = user?.subscription_tier ?? 'validate'
+  const paidTierActive = currentTier === 'build' || currentTier === 'launch'
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -93,7 +84,7 @@ export default function PricingPage() {
           Simple, honest pricing
         </h1>
         <p className="text-[var(--text-secondary)] text-base max-w-lg mx-auto">
-          Start free and upgrade as your startup grows. No hidden fees, no surprises.
+          Explore unlimited ideas for free. Upgrade when you need more AI runs, documents, research, and formation tools.
         </p>
       </motion.div>
 
@@ -102,10 +93,10 @@ export default function PricingPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.08 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {TIERS.map((tier) => {
-          const isCurrent = currentTier === tier.key
+          const isCurrent = tier.key === 'build' ? paidTierActive : currentTier === tier.key
           const Icon = tier.icon
           return (
             <div
@@ -161,6 +152,11 @@ export default function PricingPage() {
 
               <button
                 disabled={tier.ctaDisabled || isCurrent}
+                onClick={() => {
+                  if (!tier.ctaDisabled && !isCurrent) {
+                    document.getElementById('upgrade-contact')?.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
                 className={cn(
                   'w-full text-sm font-semibold py-2.5 rounded-xl transition-colors',
                   isCurrent || tier.ctaDisabled
@@ -177,6 +173,46 @@ export default function PricingPage() {
         })}
       </motion.div>
 
+      <motion.div
+        id="upgrade-contact"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.12 }}
+        className="bg-[var(--bg-surface)] border border-[var(--border-ui)] rounded-2xl p-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center shrink-0">
+            <Mail className="w-5 h-5 text-orange-400" />
+          </div>
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-heading text-xl font-bold text-[var(--text-primary)]">
+                Upgrade to Paid
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">
+                Payments are handled directly with the LaunchPad team. Contact us to schedule a short guidance call, confirm the right plan, and complete payment securely. After the meeting and payment are confirmed, the team will give you paid access.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {CONTACT_EMAILS.map((email) => (
+                <a
+                  key={email}
+                  href={`mailto:${email}?subject=LaunchPad Paid Plan Upgrade`}
+                  className="text-sm text-orange-400 hover:text-orange-300 bg-orange-500/5 border border-orange-500/15 rounded-xl px-3 py-2 transition-colors"
+                >
+                  {email}
+                </a>
+              ))}
+            </div>
+
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+              You will be connected with the responsible person within 48 hours at most. For a quicker response, email at least two of the addresses above. Thank you.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Feature comparison table */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -185,7 +221,7 @@ export default function PricingPage() {
         className="bg-[var(--bg-surface)] border border-[var(--border-ui)] rounded-2xl overflow-hidden"
       >
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_100px_100px_100px] gap-2 px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="grid grid-cols-[1fr_110px_110px] gap-2 px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-widest">Feature</span>
           {TIERS.map((t) => (
             <span key={t.key} className={cn(
@@ -202,20 +238,19 @@ export default function PricingPage() {
           <div
             key={f.label}
             className={cn(
-              'grid grid-cols-[1fr_100px_100px_100px] gap-2 px-6 py-3 items-center border-b border-[var(--border-subtle)] last:border-0',
+              'grid grid-cols-[1fr_110px_110px] gap-2 px-6 py-3 items-center border-b border-[var(--border-subtle)] last:border-0',
               i % 2 === 0 ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-surface-hover)]/30',
             )}
           >
             <span className="text-sm text-[var(--text-secondary)]">{f.label}</span>
-            <div className="text-center"><Cell value={f.validate} /></div>
-            <div className="text-center"><Cell value={f.build} /></div>
-            <div className="text-center"><Cell value={f.launch} /></div>
+            <div className="text-center"><Cell value={f.free} /></div>
+            <div className="text-center"><Cell value={f.paid} /></div>
           </div>
         ))}
       </motion.div>
 
       <p className="text-center text-[var(--text-muted)] text-xs pb-4">
-        Stripe billing coming soon. Contact us to upgrade early.
+        Secure payment and paid access are coordinated by the LaunchPad team after your upgrade call.
       </p>
     </div>
   )

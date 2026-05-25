@@ -17,7 +17,7 @@ from app.config import settings
 from app.models.conversation import ConversationMessage
 from app.models.idea import Idea
 from app.models.user import User
-from app.security.encryption import get_user_fernet, decrypt_field
+from app.security.encryption import get_user_fernet, encrypt_field, decrypt_field
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,7 @@ def _get_fernet(user: User):
         user_id=str(user.id),
         salt=user.encryption_key_salt,
         master_secret=settings.ENCRYPTION_MASTER_SECRET,
+        rsa_private_key_base64=settings.RSA_PRIVATE_KEY_BASE64,
     )
 
 
@@ -45,6 +46,15 @@ def _safe_decrypt(value, fernet) -> str:
         return decrypt_field(value, fernet)
     except Exception:
         return ""
+
+
+def _safe_decrypt_json(value, fernet, fallback):
+    if value in (None, ""):
+        return fallback
+    try:
+        return json.loads(decrypt_field(value, fernet))
+    except Exception:
+        return value
 
 
 async def _load_idea_context(idea_id: str, user: User, db: AsyncSession) -> dict:
@@ -88,9 +98,9 @@ async def _load_idea_context(idea_id: str, user: User, db: AsyncSession) -> dict
     if report:
         ctx["validation"] = {
             "score":           report.score,
-            "strengths":       report.strengths or [],
-            "weaknesses":      report.weaknesses or [],
-            "recommendations": report.recommendations or [],
+            "strengths":       _safe_decrypt_json(report.strengths, fernet, []),
+            "weaknesses":      _safe_decrypt_json(report.weaknesses, fernet, []),
+            "recommendations": _safe_decrypt_json(report.recommendations, fernet, []),
         }
 
     # Generated documents
@@ -203,6 +213,9 @@ async def get_messages(
 
     result = await db.execute(q)
     msgs = result.scalars().all()
+    fernet = _get_fernet(user)
+    for msg in msgs:
+        msg.content = _safe_decrypt(msg.content, fernet) or msg.content
     # Return in chronological order (oldest first for display)
     return list(reversed(msgs))
 
@@ -242,12 +255,13 @@ async def stream_chat_response(
     # Paid tiers: save full conversation for history.
     persist_assistant = getattr(user, "subscription_tier", "validate") != "validate"
     user_msg_id = str(uuid.uuid4())
+    fernet = _get_fernet(user)
     user_msg = ConversationMessage(
         id=user_msg_id,
         idea_id=idea_id,
         user_id=str(user.id),
         role="user",
-        content=content.strip(),
+        content=encrypt_field(content.strip(), fernet),
     )
     db.add(user_msg)
     # Commit immediately so the quota count is durable before streaming starts.
@@ -272,6 +286,8 @@ async def stream_chat_response(
             .limit(_HISTORY_LIMIT)
         )
         history = list(reversed(history_result.scalars().all()))
+        for message in history:
+            message.content = _safe_decrypt(message.content, fernet) or message.content
     else:
         history = []  # free tier: no history, each message is stateless
 
@@ -303,7 +319,7 @@ async def stream_chat_response(
                 idea_id=idea_id,
                 user_id=str(user.id),
                 role="assistant",
-                content=accumulated,
+                content=encrypt_field(accumulated, fernet),
             )
             db.add(assistant_msg)
             await db.commit()

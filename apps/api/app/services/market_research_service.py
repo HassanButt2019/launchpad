@@ -70,6 +70,7 @@ def _get_fernet(user: User):
         user_id=str(user.id),
         salt=user.encryption_key_salt,
         master_secret=settings.ENCRYPTION_MASTER_SECRET,
+        rsa_private_key_base64=settings.RSA_PRIVATE_KEY_BASE64,
     )
 
 

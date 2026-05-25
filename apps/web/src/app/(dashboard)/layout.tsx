@@ -1,10 +1,14 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   Rocket,
   LayoutDashboard,
   Lightbulb,
+  CreditCard,
+  ShieldCheck,
   LogOut,
   Plus,
   ChevronRight,
@@ -21,6 +25,7 @@ import NewIdeaButton from '@/components/ui/NewIdeaButton'
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/ideas', label: 'Ideas', icon: Lightbulb },
+  { href: '/pricing', label: 'Pricing', icon: CreditCard },
 ]
 
 function getBreadcrumb(pathname: string): { label: string; href?: string }[] {
@@ -29,6 +34,8 @@ function getBreadcrumb(pathname: string): { label: string; href?: string }[] {
 
   if (segments[0] === 'dashboard') {
     crumbs.push({ label: 'Dashboard' })
+  } else if (segments[0] === 'pricing') {
+    crumbs.push({ label: 'Pricing' })
   } else if (segments[0] === 'ideas') {
     crumbs.push({ label: 'Ideas', href: '/ideas' })
     if (segments[1] === 'new') {
@@ -63,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { mutate: logout } = useLogout()
   const user = useAuthStore((s) => s.user)
   const { data: currentUser } = useCurrentUser()
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   const displayName = user?.full_name || currentUser?.full_name || 'User'
   const displayEmail = user?.email || currentUser?.email || ''
@@ -161,9 +169,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ApiHealthIndicator />
         </div>
 
+        <div className="px-4 pb-3">
+          <div
+            className="rounded-xl p-3"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-ui)',
+            }}
+          >
+            <div className="flex items-start gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p
+                className="text-[11px] leading-relaxed"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Your startup ideas and AI analysis are encrypted to keep your work private and protected.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* User footer */}
         <div className="px-4 pb-5 mt-2">
           <div className="h-px mb-4" style={{ backgroundColor: 'var(--border-subtle)' }} />
+          <a
+            href="https://tritechx.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 transition-colors hover:bg-[var(--bg-surface-hover)]"
+            style={{
+              border: '1px solid var(--border-ui)',
+              backgroundColor: 'var(--bg-surface)',
+            }}
+          >
+            <Image
+              src="/brand/tritechx-logo.png"
+              alt="TritechX logo"
+              width={72}
+              height={22}
+              className="h-auto w-[72px] shrink-0"
+            />
+            <span
+              className="text-[10px] leading-tight"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Developed by TritechX Technical Team
+            </span>
+          </a>
           <div
             className="rounded-xl p-3"
             style={{
@@ -246,12 +300,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Right actions */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <button
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-surface-hover)]"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <Bell className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen((open) => !open)}
+                className="relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-surface-hover)]"
+                style={{ color: 'var(--text-muted)' }}
+                aria-label="Open notifications"
+                aria-expanded={notificationsOpen}
+              >
+                <Bell className="w-4 h-4" />
+                <span className="absolute right-1.5 top-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-[var(--header-bg)]" />
+              </button>
+
+              {notificationsOpen && (
+                <div
+                  className="absolute right-0 top-11 w-80 rounded-xl border p-4 shadow-2xl z-50"
+                  style={{
+                    backgroundColor: 'var(--bg-modal)',
+                    borderColor: 'var(--border-ui)',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center shrink-0">
+                      <Bell className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        Supported regions
+                      </p>
+                      <p
+                        className="text-xs leading-relaxed mt-1"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Currently, the app is fully functional for the USA, Europe, and Dubai.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-[11px] font-bold">
               {initials}
             </div>

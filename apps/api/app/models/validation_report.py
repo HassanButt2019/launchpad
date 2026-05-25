@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Integer, ForeignKey, DateTime, JSON, text
+from sqlalchemy import String, Integer, ForeignKey, DateTime, JSON, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -21,12 +21,12 @@ class ValidationReport(Base):
         String(36), ForeignKey("ideas.id", ondelete="CASCADE"), nullable=False, index=True
     )
     score: Mapped[int] = mapped_column(Integer, nullable=False)
-    score_rationale: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    score_rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     strengths: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     weaknesses: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     recommendations: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    competitive_landscape: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    market_opportunity: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    competitive_landscape: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    market_opportunity: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sources: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

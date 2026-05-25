@@ -6,12 +6,12 @@
 
 | Layer         | Technology                                                  |
 | ------------- | ----------------------------------------------------------- |
-| Backend API   | FastAPI, SQLAlchemy 2.0 (async), PostgreSQL, Redis          |
+| Backend API   | FastAPI, SQLAlchemy 2.0 (async), PostgreSQL                 |
 | Frontend      | Next.js 14 (App Router), TypeScript, Tailwind CSS           |
 | Shared Types  | TypeScript package (`@launchpad/shared`) with Zod schemas |
 | Auth          | JWT (access + refresh tokens), bcrypt                       |
-| Encryption    | Fernet per-user encryption (PBKDF2HMAC key derivation)      |
-| Rate Limiting | slowapi with Redis backend                                  |
+| Encryption    | RSA-OAEP + AES-256-GCM field encryption                     |
+| Rate Limiting | slowapi in-memory limiter                                   |
 | Migrations    | Alembic (async-compatible)                                  |
 | Containers    | Docker Compose                                              |
 | UI            | Radix UI primitives, Framer Motion, Lucide icons            |
@@ -21,8 +21,6 @@
 
 ```
 Browser ──► Next.js (3000) ──► FastAPI (8000) ──► PostgreSQL
-                                         └──────► Redis
-                                                  (tokens + rate limits)
 
 packages/shared/     ← TypeScript types + Zod schemas
 apps/api/            ← FastAPI backend
@@ -50,6 +48,7 @@ Edit `.env` and set strong values for:
 
 - `SECRET_KEY` — at least 32 random hex characters (`openssl rand -hex 32`)
 - `ENCRYPTION_MASTER_SECRET` — at least 32 random hex characters
+- `RSA_PRIVATE_KEY_BASE64` — base64-encoded RSA private key used for field encryption
 - `POSTGRES_PASSWORD` — strong database password
 - `OPENAI_API_KEY` — required for AI validation and document generation
 
@@ -59,7 +58,7 @@ Edit `.env` and set strong values for:
 docker-compose up --build -d
 ```
 
-This starts PostgreSQL, Redis, the FastAPI API (port 8000), and the Next.js frontend (port 3000).
+This starts PostgreSQL, the FastAPI API (port 8000), and the Next.js frontend (port 3000).
 
 ### 3. (Optional) Seed demo data
 
@@ -78,6 +77,14 @@ Creates `demo@launchpad.dev` / `Demo1234!` with 2 sample ideas.
 ---
 
 ## Development (without Docker)
+
+From the repo root, start the local backend and frontend together:
+
+```bash
+npm start
+```
+
+This starts Postgres with Docker Compose when Docker is running, then starts the FastAPI API on http://localhost:8000 and the Next.js app on http://localhost:3000.
 
 ### Backend
 
@@ -115,9 +122,9 @@ npm run dev        # watch mode — rebuilds types on change
 | Variable                        | Required | Description                                                   |
 | ------------------------------- | -------- | ------------------------------------------------------------- |
 | `SECRET_KEY`                  | Yes      | JWT signing secret (min 32 chars)                             |
-| `ENCRYPTION_MASTER_SECRET`    | Yes      | Master key for per-user Fernet encryption                     |
+| `ENCRYPTION_MASTER_SECRET`    | Yes      | Legacy Fernet fallback key for existing encrypted rows         |
+| `RSA_PRIVATE_KEY_BASE64`      | Yes      | Base64-encoded RSA private key for encrypted user data         |
 | `DATABASE_URL`                | Yes      | PostgreSQL async URL (`postgresql+asyncpg://...`)           |
-| `REDIS_URL`                   | Yes      | Redis URL (`redis://redis:6379`)                            |
 | `OPENAI_API_KEY`              | Yes      | OpenAI API key for AI features                                |
 | `POSTGRES_DB`                 | No       | DB name (default:`launchpad`)                               |
 | `POSTGRES_USER`               | No       | DB user (default:`postgres`)                                |
@@ -164,11 +171,11 @@ npm run dev        # watch mode — rebuilds types on change
 
 ## Security Features
 
-- **Encryption at rest** — Idea content and documents encrypted with per-user Fernet keys derived via PBKDF2HMAC (390,000 iterations). Master secret never stored in DB.
+- **Encryption at rest** — User idea content, documents, AI chat messages, validation analysis, and formation documents are encrypted with RSA-OAEP protected AES-256-GCM field encryption. Legacy Fernet decryption is retained for older rows.
 - **Row-level security** — All queries filter by `user_id` at the service layer.
-- **Token security** — Access tokens are in-memory only (never localStorage). Refresh tokens stored as httpOnly cookies. Logout blacklists tokens in Redis.
+- **Token security** — Access tokens are in-memory only (never localStorage). Refresh tokens are stored in secure same-site browser cookies. Logout blacklists tokens in process memory.
 - **CORS** — Restricted to `FRONTEND_URL` only.
-- **Rate limiting** — Via slowapi + Redis on all endpoints.
+- **Rate limiting** — Via slowapi on all endpoints.
 - **Security headers** — X-Frame-Options, X-Content-Type-Options, Referrer-Policy on every response.
 - **Non-root containers** — Both API and web Docker images run as non-root users.
 

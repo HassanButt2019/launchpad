@@ -24,20 +24,20 @@
   }
 
   .dark {
-    --bg-base:          #111110;
-    --bg-sidebar:       #0d0d0c;
-    --bg-surface:       rgba(255, 255, 255, 0.02);
-    --bg-surface-hover: rgba(255, 255, 255, 0.025);
-    --bg-input:         rgba(255, 255, 255, 0.03);
-    --bg-modal:         #111110;
+    --bg-base:          #1f1f1d;
+    --bg-sidebar:       #181816;
+    --bg-surface:       rgba(255, 255, 255, 0.045);
+    --bg-surface-hover: rgba(255, 255, 255, 0.07);
+    --bg-input:         rgba(255, 255, 255, 0.06);
+    --bg-modal:         #242421;
     --border-ui:        rgba(255, 255, 255, 0.07);
     --border-subtle:    rgba(255, 255, 255, 0.04);
     --border-strong:    rgba(255, 255, 255, 0.10);
     --text-primary:     #ffffff;
     --text-secondary:   #78716c;
     --text-muted:       #57534e;
-    --header-bg:        rgba(17, 17, 16, 0.85);
-    --ring-offset:      #111110;
+    --header-bg:        rgba(31, 31, 29, 0.85);
+    --ring-offset:      #1f1f1d;
     --ambient-gradient: rgba(249, 115, 22, 0.06);
   }
 

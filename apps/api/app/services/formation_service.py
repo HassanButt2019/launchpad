@@ -29,6 +29,7 @@ from app.schemas.formation import (
 )
 from app.data.jurisdictions import JURISDICTIONS, COMPLIANCE_TEMPLATES
 from app.config import settings
+from app.security.encryption import get_user_fernet, encrypt_field, decrypt_field
 
 
 # ---------------------------------------------------------------------------
@@ -413,6 +414,38 @@ async def _load_formation(formation_id: str, db: AsyncSession) -> FormationProfi
     return formation
 
 
+def _get_fernet(user: User):
+    return get_user_fernet(
+        user_id=str(user.id),
+        salt=user.encryption_key_salt,
+        master_secret=settings.ENCRYPTION_MASTER_SECRET,
+        rsa_private_key_base64=settings.RSA_PRIVATE_KEY_BASE64,
+    )
+
+
+def _safe_decrypt(value: Optional[str], fernet) -> str:
+    if not value:
+        return ""
+    try:
+        return decrypt_field(value, fernet)
+    except Exception:
+        return value
+
+
+def _formation_document_response(doc: FormationDocument, user: User) -> FormationDocumentResponse:
+    response = FormationDocumentResponse.model_validate(doc)
+    response.content = _safe_decrypt(response.content, _get_fernet(user)) if response.content else None
+    return response
+
+
+def _formation_profile_response(formation: FormationProfile, user: User) -> FormationProfileResponse:
+    response = FormationProfileResponse.model_validate(formation)
+    for doc in response.documents:
+        if doc.content:
+            doc.content = _safe_decrypt(doc.content, _get_fernet(user))
+    return response
+
+
 # ---------------------------------------------------------------------------
 # Service functions
 # ---------------------------------------------------------------------------
@@ -435,7 +468,7 @@ async def get_or_create_formation(
     formation = result.scalar_one_or_none()
     if formation is None:
         return None
-    return FormationProfileResponse.model_validate(formation)
+    return _formation_profile_response(formation, user)
 
 
 async def start_formation(
@@ -510,7 +543,7 @@ async def start_formation(
 
     await db.flush()
 
-    return await _load_formation(formation.id, db)
+    return _formation_profile_response(await _load_formation(formation.id, db), user)
 
 
 async def update_formation(
@@ -541,7 +574,7 @@ async def update_formation(
     formation.updated_at = datetime.now(timezone.utc)
     await db.flush()
 
-    return await _load_formation(formation.id, db)
+    return _formation_profile_response(await _load_formation(formation.id, db), user)
 
 
 async def toggle_checklist_item(
@@ -572,7 +605,7 @@ async def toggle_checklist_item(
     item.completed_at = datetime.now(timezone.utc) if completed else None
     await db.flush()
 
-    return await _load_formation(formation_id, db)
+    return _formation_profile_response(await _load_formation(formation_id, db), user)
 
 
 async def _generate_formation_doc_with_claude(
@@ -691,13 +724,12 @@ async def generate_formation_document(
     idea_title = idea_description = idea_problem = idea_audience = idea_uvp = ""
     if idea:
         try:
-            from app.security.encryption import get_user_fernet, decrypt_field
-            fernet = get_user_fernet(user.encryption_key_salt)
-            idea_title       = decrypt_field(idea.title, fernet) or ""
-            idea_description = decrypt_field(idea.description, fernet) or ""
-            idea_problem     = decrypt_field(idea.problem_statement, fernet) or ""
-            idea_audience    = decrypt_field(idea.target_audience, fernet) or ""
-            idea_uvp         = decrypt_field(idea.unique_value_prop, fernet) or ""
+            fernet = _get_fernet(user)
+            idea_title = idea.title or ""
+            idea_description = _safe_decrypt(idea.description_encrypted, fernet)
+            idea_problem = _safe_decrypt(idea.problem_statement_encrypted, fernet)
+            idea_audience = _safe_decrypt(idea.target_audience_encrypted, fernet)
+            idea_uvp = _safe_decrypt(idea.unique_value_prop_encrypted, fernet)
         except Exception as e:
             logger.warning("Could not decrypt idea fields: %s", e)
 
@@ -737,20 +769,20 @@ async def generate_formation_document(
     version = (existing.version + 1) if existing else 1
 
     if existing:
-        existing.content = content
+        existing.content = encrypt_field(content, _get_fernet(user))
         existing.status = "GENERATED"
         existing.version = version
         existing.generated_at = datetime.now(timezone.utc)
         await db.flush()
         await db.refresh(existing)
-        return FormationDocumentResponse.model_validate(existing)
+        return _formation_document_response(existing, user)
 
     doc = FormationDocument(
         id=str(uuid.uuid4()),
         formation_id=formation_id,
         doc_type=doc_type,
         jurisdiction=formation.jurisdiction,
-        content=content,
+        content=encrypt_field(content, _get_fernet(user)),
         status="GENERATED",
         version=version,
         generated_at=datetime.now(timezone.utc),
@@ -758,7 +790,7 @@ async def generate_formation_document(
     db.add(doc)
     await db.flush()
     await db.refresh(doc)
-    return FormationDocumentResponse.model_validate(doc)
+    return _formation_document_response(doc, user)
 
 
 async def get_formation_documents(
@@ -778,7 +810,7 @@ async def get_formation_documents(
         select(FormationDocument).where(FormationDocument.formation_id == formation_id)
     )
     docs = result.scalars().all()
-    return [FormationDocumentResponse.model_validate(d) for d in docs]
+    return [_formation_document_response(d, user) for d in docs]
 
 
 async def toggle_compliance_event(

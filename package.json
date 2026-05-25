@@ -7,6 +7,9 @@
     "apps/web"
   ],
   "scripts": {
+    "start": "bash scripts/dev.sh",
+    "dev": "bash scripts/dev.sh",
+    "dev:infra": "docker compose up -d postgres",
     "dev:api": "bash scripts/dev_api.sh",
     "dev:web": "npm run dev --workspace=apps/web --",
     "build:shared": "npm run build --workspace=packages/shared",

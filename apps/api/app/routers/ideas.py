@@ -36,7 +36,6 @@ async def create_idea(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await plan_guard.guard_create_idea(current_user, db)
     return await idea_service.create_idea(data, current_user, db)
 
 

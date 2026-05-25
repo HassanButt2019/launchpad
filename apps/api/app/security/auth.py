@@ -3,20 +3,12 @@ from typing import Optional, Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-import redis.asyncio as aioredis
 
 from app.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-_redis_client: Optional[aioredis.Redis] = None
-
-
-def get_redis() -> aioredis.Redis:
-    global _redis_client
-    if _redis_client is None:
-        _redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
-    return _redis_client
+_token_blacklist: dict[str, int] = {}
 
 
 def get_password_hash(password: str) -> str:
@@ -52,23 +44,21 @@ def verify_token(token: str) -> Optional[dict]:
 
 
 async def blacklist_token(token: str) -> None:
-    redis = get_redis()
-    try:
-        payload = verify_token(token)
-        if payload:
-            exp = payload.get("exp")
-            if exp:
-                ttl = int(exp - datetime.now(timezone.utc).timestamp())
-                if ttl > 0:
-                    await redis.setex(f"blacklist:{token}", ttl, "1")
-    except Exception:
-        pass
+    payload = verify_token(token)
+    if payload:
+        exp = payload.get("exp")
+        if exp and exp > datetime.now(timezone.utc).timestamp():
+            _token_blacklist[token] = int(exp)
 
 
 async def is_token_blacklisted(token: str) -> bool:
-    redis = get_redis()
-    try:
-        result = await redis.get(f"blacklist:{token}")
-        return result is not None
-    except Exception:
-        return False
+    now = int(datetime.now(timezone.utc).timestamp())
+    expired_tokens = [
+        blacklisted_token
+        for blacklisted_token, expires_at in _token_blacklist.items()
+        if expires_at <= now
+    ]
+    for expired_token in expired_tokens:
+        _token_blacklist.pop(expired_token, None)
+
+    return token in _token_blacklist

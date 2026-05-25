@@ -10,6 +10,7 @@ from app.models.formation import (
     ComplianceEvent,
 )
 from app.models.conversation import ConversationMessage
+from app.models.usage import UsageCounter
 
 __all__ = [
     "User",
@@ -25,4 +26,5 @@ __all__ = [
     "FormationDocument",
     "ComplianceEvent",
     "ConversationMessage",
+    "UsageCounter",
 ]

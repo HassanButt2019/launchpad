@@ -9,13 +9,13 @@ interface UpgradeModalProps {
 }
 
 const FREE_LIMITS = [
-  { icon: Lightbulb,    text: '1 idea only' },
-  { icon: MessageSquare, text: '5 AI chat messages' },
+  { icon: Lightbulb,    text: 'Unlimited ideas' },
+  { icon: MessageSquare, text: '5 AI chat messages total' },
   { icon: FileText,     text: 'Pitch Deck only' },
 ]
 
 const BUILD_UNLOCKS = [
-  { icon: Lightbulb,    text: '10 ideas' },
+  { icon: Lightbulb,    text: 'Unlimited ideas' },
   { icon: MessageSquare, text: 'Unlimited AI chat' },
   { icon: FileText,     text: 'All 6 document types' },
   { icon: BarChart2,    text: 'Agentic Market Research' },
@@ -113,7 +113,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
                 <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-semibold text-orange-400 uppercase tracking-widest">
-                      Build — $19/month
+                      Paid — $25/month
                     </p>
                     <span className="text-[10px] font-semibold bg-orange-500/15 text-orange-400 border border-orange-500/25 px-2 py-0.5 rounded-full">
                       Most popular

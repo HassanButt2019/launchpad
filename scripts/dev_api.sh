@@ -34,10 +34,21 @@ free_uvicorn_port
 
 cd "$API_DIR"
 
-if [[ -x "venv/bin/uvicorn" ]]; then
+if [[ -x ".venv/bin/uvicorn" ]]; then
+  UVICORN=".venv/bin/uvicorn"
+elif [[ -x "venv/bin/uvicorn" ]]; then
   UVICORN="venv/bin/uvicorn"
-else
+elif command -v uvicorn >/dev/null 2>&1; then
   UVICORN="uvicorn"
+else
+  echo "uvicorn was not found."
+  echo
+  echo "Set up the API environment, then try again:"
+  echo "  cd apps/api"
+  echo "  python3 -m venv .venv"
+  echo "  source .venv/bin/activate"
+  echo "  pip install -r requirements.txt"
+  exit 127
 fi
 
 "$UVICORN" app.main:app --host "$HOST" --port "$PORT" --reload &

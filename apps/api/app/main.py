@@ -54,6 +54,9 @@ async def lifespan(app: FastAPI):
         "ALTER TABLE validation_reports ADD COLUMN IF NOT EXISTS market_opportunity VARCHAR(500)",
         "ALTER TABLE validation_reports ADD COLUMN IF NOT EXISTS sources JSON",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_tier VARCHAR(20) NOT NULL DEFAULT 'validate'",
+        "ALTER TABLE validation_reports ALTER COLUMN score_rationale TYPE TEXT USING score_rationale::text",
+        "ALTER TABLE validation_reports ALTER COLUMN competitive_landscape TYPE TEXT USING competitive_landscape::text",
+        "ALTER TABLE validation_reports ALTER COLUMN market_opportunity TYPE TEXT USING market_opportunity::text",
     ]:
         await run_optional_ddl(engine, ddl)
 

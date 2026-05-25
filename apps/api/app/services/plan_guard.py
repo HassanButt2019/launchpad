@@ -4,16 +4,13 @@ Subscription plan enforcement.
 Single source of truth for tier limits. All AI-gated endpoints call these
 guards before touching the Anthropic or Tavily APIs.
 """
-from typing import Optional
-
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.document import Document, DocumentType
+from app.models.document import DocumentType
 from app.models.idea import Idea
-from app.models.conversation import ConversationMessage
-from app.models.validation_report import ValidationReport
+from app.models.usage import UsageCounter
 from app.models.user import User
 
 # ---------------------------------------------------------------------------
@@ -24,25 +21,25 @@ _UNLIMITED = None
 
 PLAN_LIMITS: dict[str, dict] = {
     "validate": {
-        "max_ideas": 1,
-        "max_chat_messages_per_idea": 5,       # user-sent messages, lifetime
-        "max_validations_per_idea": 1,          # lifetime
+        "max_ideas": _UNLIMITED,
+        "max_chat_messages": 5,
+        "max_validations": 1,
         "allowed_doc_types": {DocumentType.PITCH_DECK},
         "market_research": False,
         "formation": False,
     },
     "build": {
-        "max_ideas": 10,
-        "max_chat_messages_per_idea": _UNLIMITED,
-        "max_validations_per_idea": _UNLIMITED,
+        "max_ideas": _UNLIMITED,
+        "max_chat_messages": _UNLIMITED,
+        "max_validations": _UNLIMITED,
         "allowed_doc_types": set(DocumentType),
         "market_research": True,
         "formation": True,
     },
     "launch": {
         "max_ideas": _UNLIMITED,
-        "max_chat_messages_per_idea": _UNLIMITED,
-        "max_validations_per_idea": _UNLIMITED,
+        "max_chat_messages": _UNLIMITED,
+        "max_validations": _UNLIMITED,
         "allowed_doc_types": set(DocumentType),
         "market_research": True,
         "formation": True,
@@ -51,7 +48,7 @@ PLAN_LIMITS: dict[str, dict] = {
 
 _UPGRADE_MSG = (
     "You've reached the limit of your {feature} on the free Validate plan. "
-    "Upgrade to Build ($19/mo) to unlock more."
+    "Upgrade to the paid plan ($25/mo) to unlock more."
 )
 
 
@@ -67,59 +64,71 @@ def _upgrade(feature: str):
     )
 
 
+async def _get_usage_count(user: User, feature: str, db: AsyncSession) -> int:
+    result = await db.execute(
+        select(UsageCounter).where(
+            UsageCounter.user_id == user.id,
+            UsageCounter.feature == feature,
+        )
+    )
+    counter = result.scalar_one_or_none()
+    return counter.count if counter else 0
+
+
+async def _increment_usage(user: User, feature: str, db: AsyncSession) -> None:
+    result = await db.execute(
+        select(UsageCounter).where(
+            UsageCounter.user_id == user.id,
+            UsageCounter.feature == feature,
+        )
+    )
+    counter = result.scalar_one_or_none()
+    if counter is None:
+        counter = UsageCounter(user_id=user.id, feature=feature, count=1)
+        db.add(counter)
+    else:
+        counter.count += 1
+    await db.flush()
+
+
+async def _ensure_idea_exists(user: User, idea_id: str, db: AsyncSession) -> None:
+    result = await db.execute(select(Idea.id).where(Idea.id == idea_id, Idea.user_id == user.id))
+    if result.scalar_one_or_none() is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Idea not found")
+
+
 # ---------------------------------------------------------------------------
 # Guard functions — call these from routers before AI operations
 # ---------------------------------------------------------------------------
 
 async def guard_create_idea(user: User, db: AsyncSession) -> None:
-    """Block idea creation when the user has hit their idea limit."""
-    lim = _limits(user)
-    if lim["max_ideas"] is _UNLIMITED:
-        return
-    result = await db.execute(
-        select(func.count()).select_from(Idea).where(Idea.user_id == user.id)
-    )
-    count = result.scalar_one()
-    if count >= lim["max_ideas"]:
-        _upgrade(f"{lim['max_ideas']} idea" + ("s" if lim["max_ideas"] != 1 else ""))
+    """Idea creation is unlimited for all plans."""
+    return
 
 
 async def guard_chat_message(user: User, idea_id: str, db: AsyncSession) -> None:
-    """Block chat when the user has hit the per-idea message limit."""
+    """Block and record chat usage using a durable user-level counter."""
+    await _ensure_idea_exists(user, idea_id, db)
     lim = _limits(user)
-    if lim["max_chat_messages_per_idea"] is _UNLIMITED:
+    if lim["max_chat_messages"] is _UNLIMITED:
         return
-    # expire_on_commit=False on the session means SQLAlchemy can serve cached
-    # ORM objects, but a raw COUNT always hits the DB. Use execution_options to
-    # skip the identity map entirely and ensure we read the latest committed rows.
-    result = await db.execute(
-        select(func.count())
-        .select_from(ConversationMessage)
-        .where(
-            ConversationMessage.idea_id == idea_id,
-            ConversationMessage.user_id == user.id,
-            ConversationMessage.role == "user",
-        )
-        .execution_options(populate_existing=True)
-    )
-    count = result.scalar_one()
-    if count >= lim["max_chat_messages_per_idea"]:
-        _upgrade(f"{lim['max_chat_messages_per_idea']} AI chat messages per idea")
+    count = await _get_usage_count(user, "ai_chat_message", db)
+    if count >= lim["max_chat_messages"]:
+        _upgrade(f"{lim['max_chat_messages']} AI chat messages")
+    await _increment_usage(user, "ai_chat_message", db)
 
 
 async def guard_validation(user: User, idea_id: str, db: AsyncSession) -> None:
-    """Block validation runs when the per-idea lifetime limit is reached."""
+    """Block and record validation usage using a durable user-level counter."""
+    await _ensure_idea_exists(user, idea_id, db)
     lim = _limits(user)
-    if lim["max_validations_per_idea"] is _UNLIMITED:
+    if lim["max_validations"] is _UNLIMITED:
         return
-    result = await db.execute(
-        select(func.count())
-        .select_from(ValidationReport)
-        .where(ValidationReport.idea_id == idea_id)
-    )
-    count = result.scalar_one()
-    if count >= lim["max_validations_per_idea"]:
-        _upgrade(f"{lim['max_validations_per_idea']} AI validation per idea")
+    count = await _get_usage_count(user, "ai_validation", db)
+    if count >= lim["max_validations"]:
+        _upgrade(f"{lim['max_validations']} AI validation")
+    await _increment_usage(user, "ai_validation", db)
 
 
 def guard_document_type(user: User, doc_type: DocumentType) -> None:

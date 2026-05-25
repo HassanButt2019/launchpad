@@ -22,7 +22,7 @@ from app.models.idea import Idea, IdeaStage
 from app.models.validation_report import ValidationReport
 from app.models.user import User
 from app.schemas.validation_report import ValidationReportResponse
-from app.security.encryption import get_user_fernet, decrypt_field
+from app.security.encryption import get_user_fernet, encrypt_field, decrypt_field
 from app.tools.web_search import tavily_search
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ def _get_fernet(user: User):
         user_id=str(user.id),
         salt=user.encryption_key_salt,
         master_secret=settings.ENCRYPTION_MASTER_SECRET,
+        rsa_private_key_base64=settings.RSA_PRIVATE_KEY_BASE64,
     )
 
 
@@ -61,6 +62,36 @@ def _build_idea_context(idea: Idea, fernet) -> dict:
         "uvp":         _safe_decrypt(idea.unique_value_prop_encrypted, fernet),
         "market_size": idea.market_size or "Not specified",
     }
+
+
+def _encrypt_report_value(value, fernet):
+    return encrypt_field(json.dumps(value), fernet)
+
+
+def _decrypt_report_value(value, fernet, fallback):
+    if value in (None, ""):
+        return fallback
+    try:
+        return json.loads(decrypt_field(value, fernet))
+    except Exception:
+        return value
+
+
+def _report_response(report: ValidationReport, user: User) -> ValidationReportResponse:
+    fernet = _get_fernet(user)
+    return ValidationReportResponse(
+        id=report.id,
+        idea_id=report.idea_id,
+        score=report.score,
+        score_rationale=_decrypt_report_value(report.score_rationale, fernet, None),
+        strengths=_decrypt_report_value(report.strengths, fernet, []),
+        weaknesses=_decrypt_report_value(report.weaknesses, fernet, []),
+        recommendations=_decrypt_report_value(report.recommendations, fernet, []),
+        competitive_landscape=_decrypt_report_value(report.competitive_landscape, fernet, None),
+        market_opportunity=_decrypt_report_value(report.market_opportunity, fernet, None),
+        sources=report.sources,
+        generated_at=report.generated_at,
+    )
 
 
 async def _run_web_research(ctx: dict) -> List[dict]:
@@ -245,19 +276,19 @@ async def trigger_validation(
         id=str(uuid.uuid4()),
         idea_id=idea_id,
         score=score,
-        score_rationale=ai_result.get("score_rationale", ""),
-        strengths=ai_result.get("strengths", []),
-        weaknesses=ai_result.get("weaknesses", []),
-        recommendations=ai_result.get("recommendations", []),
-        competitive_landscape=ai_result.get("competitive_landscape", ""),
-        market_opportunity=ai_result.get("market_opportunity", ""),
+        score_rationale=_encrypt_report_value(ai_result.get("score_rationale", ""), fernet),
+        strengths=_encrypt_report_value(ai_result.get("strengths", []), fernet),
+        weaknesses=_encrypt_report_value(ai_result.get("weaknesses", []), fernet),
+        recommendations=_encrypt_report_value(ai_result.get("recommendations", []), fernet),
+        competitive_landscape=_encrypt_report_value(ai_result.get("competitive_landscape", ""), fernet),
+        market_opportunity=_encrypt_report_value(ai_result.get("market_opportunity", ""), fernet),
         sources=ai_result.get("sources", []),
     )
     db.add(report)
     await db.flush()
     await db.refresh(report)
 
-    return ValidationReportResponse.model_validate(report)
+    return _report_response(report, user)
 
 
 async def get_validation_report(
@@ -279,4 +310,4 @@ async def get_validation_report(
     if report is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No validation report found")
 
-    return ValidationReportResponse.model_validate(report)
+    return _report_response(report, user)
